@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
   }
 
 
-  printf("Process %d works on grid_a[%d][1000]", my_rank);
+  printf("Process %d works on grid_a[%d][1000]\n", process_height);
 
   /*********
    * Actual work of the application done here (parallel processing)
