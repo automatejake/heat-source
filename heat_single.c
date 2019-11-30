@@ -91,17 +91,16 @@ int main(int argc, char **argv) {
   int h, w, cycles, heat;
   int i, my_rank, rank_sum, size, buf, fromOne;
   int tag = 0;
-  int arrayZero[16];
-  int fromArray[2];
-  int arrayOne[16];
-
-  MPI_Status status;
-  MPI_Init(&argc, &argv); //initialize mpi
-  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
 
   float grid_a[ROWS][COLS];
   float grid_b[ROWS][COLS];
+
+  MPI_Status status;
+  MPI_Init(&argc, &argv); //initialize mpi
+  
+  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
 
   if(my_rank == 0){
 
@@ -138,5 +137,8 @@ int main(int argc, char **argv) {
     system("convert c.pnm c.png");
     return 0;
   }
+
+  MPI_Finalize();
+  return 0;
 
 }
