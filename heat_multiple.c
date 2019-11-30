@@ -94,9 +94,9 @@ int main(int argc, char **argv) {
   MPI_Gather(&grid_a, process_height, MPI_INT, &final_grid, process_height, MPI_INT, 0, MPI_COMM_WORLD);
 
   if(my_rank == 0){
-    printGridtoFile(final_grid);
+    printGridtoFile(grid_a);
     system("convert c-multiple.pnm c-multiple.png");
-    printf("finished printing file");
+    printf("finished printing file\n");
   }
 
   MPI_Finalize();
