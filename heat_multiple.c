@@ -88,6 +88,10 @@ void printGridtoFile(float grid[ROWS][COLS]) {
 }
 
 int main(int argc, char **argv) {
+  double time_spent = 0.0;
+  clock_t begin = clock();
+
+  
   int h, w, cycles, heat;
   int i, my_rank, rank_sum, size, buf, fromOne;
   int tag = 0;
@@ -100,7 +104,8 @@ int main(int argc, char **argv) {
   
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-
+  
+  
 
   if(my_rank == 0){
 
@@ -133,7 +138,11 @@ int main(int argc, char **argv) {
   }
 
   if(my_rank == 0){
+    clock_t end = clock();
     printGridtoFile(grid_a);
+    time_spent += (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("Time elpased is %f seconds", time_spent);
+
     system("convert c-multiple.pnm c-multiple.png");
     return 0;
   }
