@@ -22,32 +22,122 @@
 #define BROWN    "03 03 00 "
 #define BLACK    "00 00 00 "
 
+
+void copyNewToOld(float grid_a[ROWS][COLS], float grid_b[ROWS][COLS]);
+void calculateNew(float grid_a[ROWS][COLS], float grid_b[ROWS][COLS]);
+void printGridtoFile(float grid[ROWS][COLS]);
+
+int iterations = 0;
+int process_height;
+
+
+int main(int argc, char **argv) {
+
+  int h, w, cycles, heat;
+  int i, my_rank, rank_sum, size, buf;
+  int tag = 0;
+
+  MPI_Status status;
+  MPI_Init(&argc, &argv); //initialize mpi
+  
+  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  
+  float final_grid[ROWS][COLS];
+  
+  if (argc != 2) {
+    printf("Usage: ./program <number of timestamps>\n");
+    exit(0);
+  }
+
+  /*******
+  * Initialization process.
+  * Must be done sequentially, handled by process 0
+  *******/
+  process_height = COLS / size;
+
+  float grid_a[process_height][COLS];
+  float grid_b[process_height][COLS];
+  
+  // initialize two-dimensional array 
+  for (h = ((process_height * (my_rank+1)) - process_height); (h < process_height * (my_rank+1)); ++h) {
+    for (w = 0; w < COLS; ++w) {
+      //default is 20 celcius
+      grid_a[w][h] = 20;
+    }
+  }
+
+  if(my_rank == 0){
+    // initialize a heat source
+    for (heat = 299; heat < 700; ++heat) {
+      //40% of top of room (299-699)
+      grid_a[0][heat] = 300;
+    }
+  }
+
+
+
+
+  /*********
+   * Actual work of the application done here (parallel processing)
+   * For each cycle, copy new array 
+   * *********/
+  cycles = atoi(argv[1]);
+  
+  for (cycles; cycles > 0; --cycles) {
+    copyNewToOld(grid_a, grid_b);
+    calculateNew(grid_a, grid_b);
+  }
+
+
+  if(my_rank == 0){
+    printGridtoFile(final_grid);
+    system("convert c-multiple.pnm c-multiple.png");
+  }
+
+  MPI_Finalize();
+  return 0;
+
+}
+
+
+
+
+
+
+
+
+
+
+
 // copy new grid to the old grid
 // handled by process 1
-void copyNewToOld(float grid_a[ROWS][COLS], float grid_b[ROWS][COLS]) {
+void copyNewToOld(float grid_a[process_height][COLS], float grid_b[process_height][COLS]) {
   int x, y;
-  for (x = 0; x < ROWS; ++x) {
+  for (x = 0; x < process_height; ++x) {
     for (y = 0; y < COLS; ++y) {
       grid_b[x][y] = grid_a[x][y];
     }
   }
 }
 
-int iterations = 0;
-
 // update the new grid based on the old grid 
 // distributed
-void calculateNew(float grid_a[ROWS][COLS], float grid_b[ROWS][COLS]) {
+void calculateNew(float grid_a[process_height][COLS], float grid_b[process_height][COLS]) {
   iterations++;
   printf("Iterations: %d\n",iterations);
   int x, y;
-  for (x = 1; x < ROWS - 1; ++x) {
+  for (x = 1; x < process_height - 1; ++x) {
     for (y = 1; y < COLS - 1; ++y) {
       // each points temperature is based on the average of the four surrounding points
       grid_a[x][y] = 0.25 * (grid_b[x-1][y] + grid_b[x+1][y] + grid_b[x][y-1] + grid_b[x][y+1]);
     }
   }
 }
+
+
+
+
 
 // print the grid to a bitmap file
 void printGridtoFile(float grid[ROWS][COLS]) {
@@ -85,77 +175,4 @@ void printGridtoFile(float grid[ROWS][COLS]) {
     fprintf(fp, "\n");
   }
   fclose(fp);
-}
-
-int main(int argc, char **argv) {
-  double time_spent = 0.0;
-
-
-  
-  int h, w, cycles, heat;
-  int i, my_rank, rank_sum, size, buf;
-  int tag = 0;
-
-  float grid_a[ROWS][COLS];
-  float grid_b[ROWS][COLS];
-
-  MPI_Status status;
-  MPI_Init(&argc, &argv); //initialize mpi
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  
-  
-  /*******
-  * Initialization process.
-  * Must be done sequentially, handled by process 0
-  *******/
-  int process_chunk = COLS / size;
-
-  if (argc != 2) {
-    printf("Usage: ./program <number of timestamps>\n");
-    exit(0);
-  }
-  
-  // initialize two-dimensional array
-  for (h = 0; h < ROWS; ++h) {
-    for (w = 0; w < COLS; ++w) {
-      //default is 20 celcius
-      grid_a[w][h] = 20;
-    }
-  }
-
-  // initialize a heat source
-  for (heat = 299; heat < 700; ++heat) {
-    //40% of top of room (299-699)
-    grid_a[0][heat] = 300;
-  }
-
-  /*********
-   * Actual work of the application done here (parallel processing)
-   * For each cycle, copy new 
-   * *********/
-  if(my_rank == 0){
-    cycles = atoi(argv[1]);
-    for (cycles; cycles > 0; --cycles) {
-      copyNewToOld(grid_a, grid_b);
-      calculateNew(grid_a, grid_b);
-    }
-  }
-
-  if(my_rank > 0){
-
-  }
-
-
-
-
-  if(my_rank == 0){
-    printGridtoFile(grid_a);
-    system("convert c-multiple.pnm c-multiple.png");
-  }
-
-  MPI_Finalize();
-  return 0;
-
 }
