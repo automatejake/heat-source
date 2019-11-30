@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
     calculateNew(grid_a, grid_b);
   }
 
-  MPI_Gather(&grid_a, process_height, MPI_INT, &final_grid, process_height, 0, MPI_COMM_WORLD);
+  MPI_Gather(&grid_a, process_height, MPI_INT, &final_grid, process_height, MPI_INT, 0, MPI_COMM_WORLD);
 
   if(my_rank == 0){
     printGridtoFile(final_grid);
