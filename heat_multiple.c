@@ -28,6 +28,7 @@ void calculateNew(float grid_a[ROWS][COLS], float grid_b[ROWS][COLS]);
 void printGridtoFile(float grid[ROWS][COLS]);
 
 int iterations = 0;
+int iterations2 = 0;
 int process_height;
 
 
@@ -87,6 +88,7 @@ int main(int argc, char **argv) {
   for (cycles; cycles > 0; --cycles) {
     copyNewToOld(grid_a, grid_b);
     calculateNew(grid_a, grid_b);
+    printf("Process %d finished\n", my_rank);
   }
 
   MPI_Gather(&grid_a, process_height, MPI_INT, &final_grid, process_height, MPI_INT, 0, MPI_COMM_WORLD);
@@ -114,6 +116,8 @@ int main(int argc, char **argv) {
 // copy new grid to the old grid
 // handled by process 1
 void copyNewToOld(float grid_a[process_height][COLS], float grid_b[process_height][COLS]) {
+  iterations2++;
+  printf("Copied %d old arrays\n", iterations2);
   int x, y;
   for (x = 0; x < process_height; ++x) {
     for (y = 0; y < COLS; ++y) {
@@ -126,7 +130,7 @@ void copyNewToOld(float grid_a[process_height][COLS], float grid_b[process_heigh
 // distributed
 void calculateNew(float grid_a[process_height][COLS], float grid_b[process_height][COLS]) {
   iterations++;
-  printf("Iterations: %d\n",iterations);
+  printf("Calculated %d new arrays\n", iterations);
   int x, y;
   for (x = 1; x < process_height - 1; ++x) {
     for (y = 1; y < COLS - 1; ++y) {
