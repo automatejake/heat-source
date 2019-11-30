@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
   }
 
 
-  printf("Process %d works on grid_a[%d][1000]\n", process_height);
+  printf("Process %d works on grid_a[%d][1000]\n", my_rank, process_height);
 
   /*********
    * Actual work of the application done here (parallel processing)
@@ -96,17 +96,13 @@ int main(int argc, char **argv) {
   if(my_rank == 0){
     printGridtoFile(final_grid);
     system("convert c-multiple.pnm c-multiple.png");
+    printf("finished printing file");
   }
 
   MPI_Finalize();
   return 0;
 
 }
-
-
-
-
-
 
 
 
