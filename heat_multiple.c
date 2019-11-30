@@ -61,10 +61,10 @@ int main(int argc, char **argv) {
   float grid_b[process_height][COLS];
   
   // initialize two-dimensional array 
-  for (h = ((process_height * (my_rank+1)) - process_height); (h < process_height * (my_rank+1)); ++h) {
+  for (h = 0; h < process_height; ++h) {
     for (w = 0; w < COLS; ++w) {
       //default is 20 celcius
-      grid_a[w][h] = 20;
+      grid_a[h][w] = 20;
     }
   }
 
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
   }
 
 
-
+  printf("Process %d works on grid_a[%d][1000]", my_rank);
 
   /*********
    * Actual work of the application done here (parallel processing)
@@ -88,8 +88,8 @@ int main(int argc, char **argv) {
   for (cycles; cycles > 0; --cycles) {
     copyNewToOld(grid_a, grid_b);
     calculateNew(grid_a, grid_b);
-    printf("Process %d finished\n", my_rank);
   }
+  printf("Process %d finished\n", my_rank);
 
   MPI_Gather(&grid_a, process_height, MPI_INT, &final_grid, process_height, MPI_INT, 0, MPI_COMM_WORLD);
 
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
 // handled by process 1
 void copyNewToOld(float grid_a[process_height][COLS], float grid_b[process_height][COLS]) {
   iterations2++;
-  printf("Copied %d old arrays\n", iterations2);
+  // printf("Copied %d old arrays\n", iterations2);
   int x, y;
   for (x = 0; x < process_height; ++x) {
     for (y = 0; y < COLS; ++y) {
@@ -130,7 +130,7 @@ void copyNewToOld(float grid_a[process_height][COLS], float grid_b[process_heigh
 // distributed
 void calculateNew(float grid_a[process_height][COLS], float grid_b[process_height][COLS]) {
   iterations++;
-  printf("Calculated %d new arrays\n", iterations);
+  // printf("Calculated %d new arrays\n", iterations);
   int x, y;
   for (x = 1; x < process_height - 1; ++x) {
     for (y = 1; y < COLS - 1; ++y) {
