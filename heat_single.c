@@ -4,9 +4,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <sys/utsname.h>
-#include <mpi.h>
-
 #define COLS 1000
 #define ROWS 1000
 
@@ -23,7 +20,6 @@
 #define BLACK    "00 00 00 "
 
 // copy new grid to the old grid
-// handled by process 1
 void copyNewToOld(float grid_a[ROWS][COLS], float grid_b[ROWS][COLS]) {
   int x, y;
   for (x = 0; x < ROWS; ++x) {
@@ -33,30 +29,23 @@ void copyNewToOld(float grid_a[ROWS][COLS], float grid_b[ROWS][COLS]) {
   }
 }
 
-int iterations = 0;
-
-// update the new grid based on the old grid 
-// distributed
+// update the new grid based on the old grid
 void calculateNew(float grid_a[ROWS][COLS], float grid_b[ROWS][COLS]) {
-  iterations++;
-  printf("Iterations: %d\n",iterations);
   int x, y;
   for (x = 1; x < ROWS - 1; ++x) {
     for (y = 1; y < COLS - 1; ++y) {
-      // each points temperature is based on the average of the four surrounding points
       grid_a[x][y] = 0.25 * (grid_b[x-1][y] + grid_b[x+1][y] + grid_b[x][y-1] + grid_b[x][y+1]);
     }
   }
 }
 
-// print the grid to a bitmap file
+// print the grid to a bitmat file
 void printGridtoFile(float grid[ROWS][COLS]) {
   int x, y;
   FILE * fp;
-  fp = fopen("c.pnm", "w");
+  fp = fopen("c-single.pnm", "w");
 
   /* Print the P3 format header */
-  //handled by process 1
   fprintf(fp, "P3\n%d %d\n15\n", COLS, ROWS);
   for (x = 0; x < ROWS; ++x) {
     for (y = 0; y < COLS; ++y) {
@@ -89,56 +78,33 @@ void printGridtoFile(float grid[ROWS][COLS]) {
 
 int main(int argc, char **argv) {
   int h, w, cycles, heat;
-  int i, my_rank, rank_sum, size, buf, fromOne;
-  int tag = 0;
-
   float grid_a[ROWS][COLS];
   float grid_b[ROWS][COLS];
 
-  MPI_Status status;
-  MPI_Init(&argc, &argv); //initialize mpi
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  if (argc != 2) {
+    printf("Usage: ./program <number of timestamps>\n");
+    exit(0);
+  }
+  cycles = atoi(argv[1]);
 
-
-  if(my_rank == 0){
-
-
-    if (argc != 2) {
-      printf("Usage: ./program <number of timestamps>\n");
-      exit(0);
+  // initialize two-dimensional array
+  for (h = 0; h < ROWS; ++h) {
+    for (w = 0; w < COLS; ++w) {
+      grid_a[w][h] = 20;
     }
-    cycles = atoi(argv[1]);
-
-    // initialize two-dimensional array
-    for (h = 0; h < ROWS; ++h) {
-      for (w = 0; w < COLS; ++w) {
-        //default is 20 celcius
-        grid_a[w][h] = 20;
-      }
-    }
-
-    // initialize a heat source
-    for (heat = 299; heat < 700; ++heat) {
-      //40% of top of room (299-699)
-      grid_a[0][heat] = 300;
-    }
-
-    for (cycles; cycles > 0; --cycles) {
-      copyNewToOld(grid_a, grid_b);
-      calculateNew(grid_a, grid_b);
-    }
-
   }
 
-  if(my_rank == 0){
-    printGridtoFile(grid_a);
-    system("convert c.pnm c.png");
-    return 0;
+  // initialize a heat source
+  for (heat = 299; heat < 700; ++heat) {
+    grid_a[0][heat] = 300;
   }
 
-  MPI_Finalize();
+  for (cycles; cycles > 0; --cycles) {
+    copyNewToOld(grid_a, grid_b);
+    calculateNew(grid_a, grid_b);
+  }
+
+  printGridtoFile(grid_a);
+  system("convert c-single.pnm c-single.png");
   return 0;
-
 }
