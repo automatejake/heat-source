@@ -3,7 +3,6 @@
 #include <math.h>
 #include <string.h>
 #include <unistd.h>
-#include <time.h>
 
 #include <sys/utsname.h>
 #include <mpi.h>
@@ -90,11 +89,11 @@ void printGridtoFile(float grid[ROWS][COLS]) {
 
 int main(int argc, char **argv) {
   double time_spent = 0.0;
-  clock_t begin = clock();
+
 
   
   int h, w, cycles, heat;
-  int i, my_rank, rank_sum, size, buf, fromOne;
+  int i, my_rank, rank_sum, size, buf;
   int tag = 0;
 
   float grid_a[ROWS][COLS];
@@ -107,45 +106,53 @@ int main(int argc, char **argv) {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   
   
+  /*******
+  * Initialization process.
+  * Must be done sequentially, handled by process 0
+  *******/
+  int process_chunk = COLS / size;
 
+  if (argc != 2) {
+    printf("Usage: ./program <number of timestamps>\n");
+    exit(0);
+  }
+  
+  // initialize two-dimensional array
+  for (h = 0; h < ROWS; ++h) {
+    for (w = 0; w < COLS; ++w) {
+      //default is 20 celcius
+      grid_a[w][h] = 20;
+    }
+  }
+
+  // initialize a heat source
+  for (heat = 299; heat < 700; ++heat) {
+    //40% of top of room (299-699)
+    grid_a[0][heat] = 300;
+  }
+
+  /*********
+   * Actual work of the application done here (parallel processing)
+   * For each cycle, copy new 
+   * *********/
   if(my_rank == 0){
-
-
-    if (argc != 2) {
-      printf("Usage: ./program <number of timestamps>\n");
-      exit(0);
-    }
     cycles = atoi(argv[1]);
-
-    // initialize two-dimensional array
-    for (h = 0; h < ROWS; ++h) {
-      for (w = 0; w < COLS; ++w) {
-        //default is 20 celcius
-        grid_a[w][h] = 20;
-      }
-    }
-
-    // initialize a heat source
-    for (heat = 299; heat < 700; ++heat) {
-      //40% of top of room (299-699)
-      grid_a[0][heat] = 300;
-    }
-
     for (cycles; cycles > 0; --cycles) {
       copyNewToOld(grid_a, grid_b);
       calculateNew(grid_a, grid_b);
     }
+  }
+
+  if(my_rank > 0){
 
   }
 
-  if(my_rank == 0){
-    clock_t end = clock();
-    printGridtoFile(grid_a);
-    time_spent += (double)(end - begin) / CLOCKS_PER_SEC;
-    printf("Time elpased is %f seconds", time_spent);
 
+
+
+  if(my_rank == 0){
+    printGridtoFile(grid_a);
     system("convert c-multiple.pnm c-multiple.png");
-    return 0;
   }
 
   MPI_Finalize();
