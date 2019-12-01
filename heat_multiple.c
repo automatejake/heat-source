@@ -91,10 +91,10 @@ int main(int argc, char **argv) {
   }
   printf("Process %d finished\n", my_rank);
 
-  MPI_Gather(&grid_a, process_height, MPI_INT, &final_grid, process_height, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Gather(&grid_a, process_height, MPI_FLOAT, &final_grid, process_height, MPI_FLOAT, 0, MPI_COMM_WORLD);
 
   if(my_rank == 0){
-    printGridtoFile(grid_a);
+    printGridtoFile(final_grid);
     system("convert c-multiple.pnm c-multiple.png");
     printf("finished printing file\n");
   }
